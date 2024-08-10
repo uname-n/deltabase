@@ -3,7 +3,6 @@ from os.path import join, exists
 from os import listdir
 from datetime import datetime
 
-
 class delta:
     __delta_source:str
     __delta_sql_context:SQLContext=SQLContext(frames=[])
@@ -68,9 +67,9 @@ class delta:
         else: raise ValueError("invalid data type provided.")
 
     def delete(self, table:str, filter:callable) -> int:
-        source_data:DataFrame = self.sql(f"select * from {table}")        
+        source_data:DataFrame = self.sql(f"select * from {table}")     
         filter_data = source_data.filter(
-            ~struct(source_data.columns).map_elements(filter)
+            ~struct(source_data.columns).map_elements(filter, return_dtype=bool)
         )
         self.__delta_sql_context.register(table, filter_data)
         return len(source_data) - len(filter_data)
@@ -86,30 +85,3 @@ class delta:
 
     def sql(self, query:str) -> DataFrame:
         return self.__delta_sql_context.execute(query).collect()
-
-# = = = = = = = = =
-
-from time import time
-
-db:delta = delta.connect(path="tutorial.delta")
-
-start = time()
-print(db.add(table="table_name", primary_key="name", data=[
-    dict(name=f"name_{n}", id=n) for n in range(1_000_000)
-]))
-print(time()-start)
-
-db.commit("table_name")
-
-start = time()
-print(db.sql("select * from table_name where id = 427635"))
-print(time()-start)
-
-start = time()
-print(db.delete("table_name", lambda row: (row["id"] % 2) == 0 ))
-print(time()-start)
-
-start = time()
-print(db.sql("select * from table_name"))
-print(time()-start)
-
