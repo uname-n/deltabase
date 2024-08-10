@@ -61,12 +61,9 @@ class delta:
             self.__delta_sql_context.register(table, update_data)
 
             return update_data
-        
-    def __add_one(self, table:str, primary_key:str, data:dict):
-        return self.__add_multiple(table=table, primary_key=primary_key, data=[data])
 
     def add(self, table:str, primary_key:str, data:list[dict] | dict):
-        if type(data) == dict: return self.__add_one(table, primary_key, data)
+        if type(data) == dict: return self.__add_multiple(table, primary_key, [data])
         elif type(data) == list: return self.__add_multiple(table, primary_key, data)
         else: raise ValueError("invalid data type provided.")
 
@@ -96,16 +93,6 @@ from time import time
 
 db:delta = delta.connect(path="tutorial.delta")
 
-# start = time()
-# for g in range(1000):
-#     for n in range(100):
-#         db.add(table="table_name", primary_key="name", data=dict(
-#             name=f"name_{g}_{n}",
-#             id=g*n,
-#         ))
-#     db.commit("table_name")
-# print(time()-start)
-
 start = time()
 print(db.add(table="table_name", primary_key="name", data=[
     dict(name=f"name_{n}", id=n) for n in range(1_000_000)
@@ -115,5 +102,14 @@ print(time()-start)
 db.commit("table_name")
 
 start = time()
-print(db.sql("select * from table_name where id = 7635"))
+print(db.sql("select * from table_name where id = 427635"))
 print(time()-start)
+
+start = time()
+print(db.delete("table_name", lambda row: (row["id"] % 2) == 0 ))
+print(time()-start)
+
+start = time()
+print(db.sql("select * from table_name"))
+print(time()-start)
+
