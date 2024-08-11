@@ -1,6 +1,6 @@
 from types import LambdaType
 
-from polars import SQLContext, DataFrame, LazyFrame, scan_delta, coalesce, struct
+from polars import SQLContext, DataFrame, LazyFrame, sql_expr, scan_delta, coalesce, struct
 from os.path import join, exists
 from os import listdir
 from datetime import datetime
@@ -74,9 +74,14 @@ class delta:
         elif type(data) == list: return self.__add_multiple(table, primary_key, data)
         else: raise ValueError(f"'data' was provided '{type(data)}', type must be 'list[dict]' or 'dict'")
 
-    def delete(self, table:str, filter:str|LambdaType):
-        if type(filter) == str:
-            filter_data = self.sql(f"select * from {table} where {filter}", lazy=True)
+    def delete(self, table:str, filter:str|LambdaType=None):
+        if not filter: 
+            self.__delta_sql_context.unregister(table)
+            return
+        elif type(filter) == str:
+            # filter_data = self.sql(f"select * from {table} where {filter}", lazy=True)
+            source_data = self.sql(f"select * from {table}", lazy=True)
+            filter_data = source_data.filter(~sql_expr(filter))
         elif type(filter) == LambdaType:
             source_data = self.sql(f"select * from {table}", lazy=True)
             filter_data = source_data.filter(
@@ -90,7 +95,7 @@ class delta:
         data = self.sql(f"select * from {table}")
         options = dict(mode="overwrite")
         if force: options["delta_write_options"] = {"schema_mode":"overwrite"}
-        return data.write_delta(join(self.__delta_source, table), **options)
+        data.write_delta(join(self.__delta_source, table), **options)
     
     def checkout(self, table:str, version:int|str|datetime):
         table_path = join(self.__delta_source, table)
