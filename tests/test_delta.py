@@ -1,6 +1,6 @@
 import pytest
 
-from delta import delta
+from deltadb import delta
 
 from polars import DataFrame
 from os.path import exists
