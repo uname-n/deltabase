@@ -4,7 +4,7 @@ version = "0.1.1"
 description = ""
 authors = ["uname-n <noreply@github.com>"]
 readme = "README.md"
-packages = [{include = "delta"}]
+packages = [{include = "deltadb"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
