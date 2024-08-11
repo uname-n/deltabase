@@ -19,7 +19,7 @@ def test_connect(db):
     assert db.tables == []
 
 def test_add_new_record(db):
-    db.add(table="test_table", primary_key="id", data=dict(id=1, name="alice"))
+    db.upsert(table="test_table", primary_key="id", data=dict(id=1, name="alice"))
     result = db.sql("select * from test_table")
 
     assert isinstance(result, DataFrame)
@@ -28,7 +28,7 @@ def test_add_new_record(db):
     assert result["name"].to_list() == ["alice"]
 
 def test_add_multiple_records(db):
-    db.add(table="test_table", primary_key="id", data=[dict(id=2, name="bob"), dict(id=3, name="charles")])
+    db.upsert(table="test_table", primary_key="id", data=[dict(id=2, name="bob"), dict(id=3, name="charles")])
     result = db.sql("select * from test_table")
 
     assert result.shape == (2, 2)
@@ -36,7 +36,7 @@ def test_add_multiple_records(db):
     assert set(result["name"].to_list()) == {"bob", "charles"}
 
 def test_add_with_new_column(db):
-    db.add(table="test_table", primary_key="id", data=dict(id=4, name="david", job="fisher"))
+    db.upsert(table="test_table", primary_key="id", data=dict(id=4, name="david", job="fisher"))
     result = db.sql("select * from test_table")
 
     assert result.shape == (1, 3)
@@ -45,8 +45,8 @@ def test_add_with_new_column(db):
     assert result["job"].to_list() == ["fisher"]
 
 def test_delete_record(db):
-    db.add(table="test_table", primary_key="id", data=dict(id=5, name="edward"))
-    db.add(table="test_table", primary_key="id", data=dict(id=6, name="charles"))
+    db.upsert(table="test_table", primary_key="id", data=dict(id=5, name="edward"))
+    db.upsert(table="test_table", primary_key="id", data=dict(id=6, name="charles"))
     db.delete(table="test_table", filter="name='charles'")
     result = db.sql("select * from test_table")
 
@@ -55,10 +55,10 @@ def test_delete_record(db):
     assert result["name"].to_list() == ["edward"]
 
 def test_commit_and_versioning(db):
-    db.add(table="test_table", primary_key="id", data=dict(id=5, name="edward"))
+    db.upsert(table="test_table", primary_key="id", data=dict(id=5, name="edward"))
     db.commit("test_table")
 
-    db.add(table="test_table", primary_key="id", data=dict(id=5, name="henry"))
+    db.upsert(table="test_table", primary_key="id", data=dict(id=5, name="henry"))
 
     result = db.sql("select * from test_table")
     assert result.shape == (1, 2)
@@ -73,7 +73,7 @@ def test_commit_and_versioning(db):
     assert result["name"].to_list() == ["edward"]
 
 def test_delete_table(db):
-    db.add(table="test_table", primary_key="id", data=dict(id=5, name="george"))
+    db.upsert(table="test_table", primary_key="id", data=dict(id=5, name="george"))
     db.commit("test_table")
 
     result = db.sql("select * from test_table")

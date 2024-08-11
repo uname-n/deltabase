@@ -15,48 +15,48 @@ tests/test_delta.py::test_delete_table PASSED                            [ 53%]
 tests/test_delta_workflow.py::test_connect PASSED                        [ 61%]
 tests/test_delta_workflow.py::test_add_data PASSED                       [ 69%]
 tests/test_delta_workflow.py::test_first_commit PASSED                   [ 76%]
-tests/test_delta_workflow.py::test_delete_rows PASSED                    [ 84%]
+tests/test_delta_workflow.py::test_delete_records PASSED                 [ 84%]
 tests/test_delta_workflow.py::test_second_commit PASSED                  [ 92%]
 tests/test_delta_workflow.py::test_checkout_original_commit PASSED       [100%]
 
 ============================== slowest durations ===============================
-12.35s call     tests/test_delta_workflow.py::test_add_data
-3.59s call     tests/test_delta_workflow.py::test_second_commit
-3.02s call     tests/test_delta_workflow.py::test_first_commit
-1.35s call     tests/test_delta_workflow.py::test_checkout_original_commit
-0.90s setup    tests/test_delta_workflow.py::test_delete_rows
-0.89s setup    tests/test_delta_workflow.py::test_checkout_original_commit
-0.89s setup    tests/test_delta_workflow.py::test_second_commit
-0.53s call     tests/test_delta_workflow.py::test_delete_rows
-0.27s call     tests/test_delta.py::test_commit_and_versioning
+11.79s call     tests/test_delta_workflow.py::test_add_data
+3.61s call     tests/test_delta_workflow.py::test_second_commit
+3.07s call     tests/test_delta_workflow.py::test_first_commit
+1.34s call     tests/test_delta_workflow.py::test_checkout_original_commit
+0.90s setup    tests/test_delta_workflow.py::test_checkout_original_commit
+0.89s setup    tests/test_delta_workflow.py::test_delete_records
+0.88s setup    tests/test_delta_workflow.py::test_second_commit
+0.52s call     tests/test_delta_workflow.py::test_delete_records
+0.28s call     tests/test_delta.py::test_commit_and_versioning
 0.00s call     tests/test_delta.py::test_delete_table
 0.00s call     tests/test_delta.py::test_delete_record
-0.00s call     tests/test_delta.py::test_add_new_record
 0.00s teardown tests/test_delta.py::test_commit_and_versioning
+0.00s call     tests/test_delta.py::test_add_new_record
+0.00s setup    tests/test_delta_workflow.py::test_first_commit
 0.00s setup    tests/test_delta.py::test_connect
 0.00s teardown tests/test_delta_workflow.py::test_add_data
-0.00s setup    tests/test_delta_workflow.py::test_first_commit
-0.00s teardown tests/test_delta.py::test_delete_table
 0.00s call     tests/test_delta.py::test_add_multiple_records
+0.00s teardown tests/test_delta.py::test_delete_table
 0.00s setup    tests/test_delta.py::test_delete_table
-0.00s teardown tests/test_delta_workflow.py::test_delete_rows
 0.00s teardown tests/test_delta_workflow.py::test_second_commit
 0.00s teardown tests/test_delta_workflow.py::test_checkout_original_commit
 0.00s call     tests/test_delta.py::test_add_with_new_column
-0.00s setup    tests/test_delta.py::test_add_new_record
-0.00s setup    tests/test_delta_workflow.py::test_connect
-0.00s setup    tests/test_delta.py::test_commit_and_versioning
 0.00s teardown tests/test_delta_workflow.py::test_first_commit
+0.00s teardown tests/test_delta_workflow.py::test_delete_records
+0.00s setup    tests/test_delta_workflow.py::test_connect
+0.00s setup    tests/test_delta.py::test_add_new_record
 0.00s call     tests/test_delta.py::test_connect
-0.00s teardown tests/test_delta.py::test_delete_record
-0.00s setup    tests/test_delta_workflow.py::test_add_data
-0.00s setup    tests/test_delta.py::test_add_multiple_records
 0.00s teardown tests/test_delta.py::test_connect
 0.00s teardown tests/test_delta.py::test_add_new_record
-0.00s setup    tests/test_delta.py::test_delete_record
+0.00s setup    tests/test_delta_workflow.py::test_add_data
+0.00s setup    tests/test_delta.py::test_add_multiple_records
 0.00s setup    tests/test_delta.py::test_add_with_new_column
-0.00s teardown tests/test_delta.py::test_add_multiple_records
+0.00s setup    tests/test_delta.py::test_commit_and_versioning
+0.00s setup    tests/test_delta.py::test_delete_record
+0.00s teardown tests/test_delta.py::test_delete_record
 0.00s call     tests/test_delta_workflow.py::test_connect
+0.00s teardown tests/test_delta.py::test_add_multiple_records
 0.00s teardown tests/test_delta.py::test_add_with_new_column
 0.00s teardown tests/test_delta_workflow.py::test_connect
-============================= 13 passed in 36.96s ==============================
+============================= 13 passed in 36.21s ==============================

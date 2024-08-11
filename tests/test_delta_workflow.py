@@ -8,6 +8,7 @@ from os import listdir
 from shutil import rmtree
 from time import time
 
+TIMEOUT = 20
 W = 10_000
 H = 10_000
 
@@ -24,13 +25,13 @@ def test_connect(db):
 
 def test_add_data(db):
     s = time()
-    db.add(table="test_table", primary_key="name", data=testing_data)
+    db.upsert(table="test_table", primary_key="name", data=testing_data)
     e = time()
     result = db.sql("select * from test_table")
 
     assert isinstance(result, DataFrame)
     assert result.shape == (W, H+1)
-    assert (e-s) < 20
+    assert (e-s) < TIMEOUT
 
 def test_first_commit(db):
     db.commit("test_table")
@@ -38,7 +39,7 @@ def test_first_commit(db):
     assert len(listdir("test.delta/test_table")) == 2
     assert len(listdir("test.delta/test_table/_delta_log")) == 1
 
-def test_delete_rows(db):
+def test_delete_records(db):
     db.delete("test_table", "field_6 % 2 == 0")
     result = db.sql("select * from test_table")
     assert 0 < result.shape[0] < W

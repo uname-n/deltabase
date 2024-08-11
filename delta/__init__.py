@@ -50,7 +50,7 @@ class delta:
         
         return update_data
     
-    def __add_multiple(self, table:str, primary_key:str, data:list[dict]):
+    def __upsert_multiple(self, table:str, primary_key:str, data:list[dict]):
         if table not in self.tables:
             target_data = LazyFrame(data)
             self.__delta_sql_context.register(table, target_data)
@@ -69,9 +69,9 @@ class delta:
 
         self.__delta_sql_context.register(table, update_data)
 
-    def add(self, table:str, primary_key:str, data:list[dict] | dict):
-        if type(data) == dict: return self.__add_multiple(table, primary_key, [data])
-        elif type(data) == list: return self.__add_multiple(table, primary_key, data)
+    def upsert(self, table:str, primary_key:str, data:list[dict] | dict):
+        if type(data) == dict: return self.__upsert_multiple(table, primary_key, [data])
+        elif type(data) == list: return self.__upsert_multiple(table, primary_key, data)
         else: raise ValueError(f"'data' was provided '{type(data)}', type must be 'list[dict]' or 'dict'")
 
     def delete(self, table:str, filter:str|LambdaType=None):
