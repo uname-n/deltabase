@@ -1,4 +1,4 @@
-from polars import SQLContext, DataFrame, read_delta, coalesce, struct
+from polars import SQLContext, DataFrame, LazyFrame, read_delta, coalesce, struct
 from os.path import join, exists
 from os import listdir
 from datetime import datetime
@@ -25,8 +25,15 @@ class delta:
         
         return delta_cls
 
-    def __sync_data(self, primary_key:str, target_data:DataFrame, source_data:DataFrame):
-        update_data = source_data.join(target_data, on=primary_key, how="full", suffix="_delta_target", coalesce=True)
+    def __sync_data(self, primary_key:str, target_data:LazyFrame, source_data:DataFrame) -> DataFrame:
+        target_data = target_data.collect()
+        update_data = source_data.join(
+            target_data,
+            on=primary_key,
+            how="full",
+            suffix="_delta_target",
+            coalesce=True
+        )
 
         coalesce_columns = [col for col in update_data.columns if "_delta_target" in col]
         coalesce_columns_strip = [col.replace("_delta_target", "") for col in coalesce_columns]
@@ -44,27 +51,26 @@ class delta:
             target_data = DataFrame(data)
             self.__delta_sql_context.register(table, target_data)
             return target_data
+        
+        table_path = join(self.__delta_source, table)
+        if exists(table_path):
+            source_data = read_delta(table_path)
+            staged_data = self.sql(f"select * from {table}").lazy()
+            source_data = self.__sync_data(primary_key, staged_data, source_data)
         else:
-            table_path = join(self.__delta_source, table)
-            if exists(table_path):
-                source_data = read_delta(table_path)
-                staged_data = self.sql(f"select * from {table}")
-                source_data = self.__sync_data(primary_key, staged_data, source_data)
-            else:
-                source_data = self.sql(f"select * from {table}")
+            source_data = self.sql(f"select * from {table}").lazy()
 
-            target_data = DataFrame(data)
+        target_data = DataFrame(data).lazy()
+        update_data = self.__sync_data(primary_key, target_data, source_data)
 
-            update_data = self.__sync_data(primary_key, target_data, source_data)
+        self.__delta_sql_context.register(table, update_data)
 
-            self.__delta_sql_context.register(table, update_data)
-
-            return update_data
+        return update_data
 
     def add(self, table:str, primary_key:str, data:list[dict] | dict):
         if type(data) == dict: return self.__add_multiple(table, primary_key, [data])
         elif type(data) == list: return self.__add_multiple(table, primary_key, data)
-        else: raise ValueError("invalid data type provided.")
+        else: raise ValueError(f"'data' was provided '{type(data)}', type must be 'list[dict]' or 'dict'")
 
     def delete(self, table:str, filter:callable) -> int:
         source_data:DataFrame = self.sql(f"select * from {table}")     
@@ -76,8 +82,9 @@ class delta:
         
     def commit(self, table:str, overwrite:bool=False, force:bool=False):
         data = self.sql(f"select * from {table}")
-        if force: return data.write_delta(join(self.__delta_source, table), mode="overwrite", delta_write_options={"schema_mode":"overwrite"})
-        return data.write_delta(join(self.__delta_source, table), mode="overwrite")
+        options = dict(mode="overwrite")
+        if force: options["delta_write_options"] = {"schema_mode":"overwrite"}
+        return data.write_delta(join(self.__delta_source, table), **options)
     
     def checkout(self, table:str, version:int|str|datetime):
         table_path = join(self.__delta_source, table)
