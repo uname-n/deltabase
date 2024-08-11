@@ -1,9 +1,9 @@
-# deltadb
+# DeltaDB
 
-**deltadb** is a lightweight, fast, and scalable database built on [**polars**](https://github.com/pola-rs/polars) and [**deltalake**](https://github.com/delta-io/delta-rs). It is designed to streamline data operations, providing features like upsert, delete, commit, and version control while harnessing the high performance of polars and deltalake.
+**DeltaDB** is a lightweight, fast, and scalable database built on [**polars**](https://github.com/pola-rs/polars) and [**deltalake**](https://github.com/delta-io/delta-rs). It is designed to streamline data operations, providing features like upsert, delete, commit, and version control while harnessing the high performance of polars and deltalake.
 
 ## Installation
-To install __deltadb__, run the following command:
+To install __DeltaDB__, run the following command:
 
 ```bash
 pip install deltadb
@@ -26,7 +26,7 @@ Establish a connection to your database:
 ```python
 from deltadb import delta
 
-# Connect to a database at the specified path
+# connect to a database at the specified path
 db = delta.connect(path="test.delta")
 ```
 
@@ -40,11 +40,11 @@ db.upsert(
     data={"id": 1, "name": "alice"}
 )
 
-# Query the data
-result = db.sql("SELECT * FROM test_table")
-print(result)  # Output: [{'id': 1, 'name': 'alice'}]
+# query the data
+result = db.sql("select * from test_table")
+print(result)  # output: [{'id': 1, 'name': 'alice'}]
 
-# Commit the changes
+# commit the changes
 db.commit("test_table")
 ```
 
@@ -67,7 +67,7 @@ db.upsert(
 Execute SQL queries and return the results as a polars DataFrame for advanced data manipulation:
 
 ```python
-df_result = db.sql("SELECT * FROM test_table", dtype="polars")
+df_result = db.sql("select * from test_table", dtype="polars")
 print(df_result)
 ```
 
@@ -82,13 +82,13 @@ db.commit("test_table", force=True)
 Remove specific records from a table using SQL or lambda functions, or delete the entire table:
 
 ```python
-# Delete records using an SQL filter
+# delete records using an sql filter
 db.delete(table="test_table", filter="name='charles'")
 
-# Delete records using a lambda function
+# delete records using a lambda function
 db.delete(table="test_table", filter=lambda row: row["name"] == "charles")
 
-# Delete the entire table
+# delete the entire table
 db.delete("test_table")
 ```
 
