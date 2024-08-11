@@ -50,7 +50,7 @@ class delta:
         
         return update_data
     
-    def __upsert_multiple(self, table:str, primary_key:str, data:list[dict]):
+    def __upsert_multiple(self, table:str, primary_key:str, data:list[dict]) -> bool:
         if table not in self.tables:
             target_data = LazyFrame(data)
             self.__delta_sql_context.register(table, target_data)
@@ -68,13 +68,14 @@ class delta:
         update_data = self.__sync_data(primary_key, target_data, source_data)
 
         self.__delta_sql_context.register(table, update_data)
+        return True
 
     def upsert(self, table:str, primary_key:str, data:list[dict] | dict):
         if type(data) == dict: return self.__upsert_multiple(table, primary_key, [data])
         elif type(data) == list: return self.__upsert_multiple(table, primary_key, data)
         else: raise ValueError(f"'data' was provided as '{type(data)}', type must be 'list[dict]' or 'dict'")
 
-    def delete(self, table:str, filter:str|LambdaType=None):
+    def delete(self, table:str, filter:str|LambdaType=None) -> bool:
         if not filter: 
             self.__delta_sql_context.unregister(table)
             return
@@ -89,8 +90,9 @@ class delta:
         else: raise ValueError(f"'filter' was provided as '{type(filter)}', type must be 'callable' or 'str'")
 
         self.__delta_sql_context.register(table, filter_data)
+        return True
 
-    def commit(self, table:str, overwrite:bool=False, force:bool=False):
+    def commit(self, table:str, force:bool=False) -> bool:
         table_path = join(self.__delta_source, table)
         if table not in self.tables: 
             if exists(table_path): 
@@ -98,15 +100,22 @@ class delta:
                 return
             else:
                 raise AssertionError(f"table, '{table}' was not found.")
-        data = self.sql(f"select * from {table}")
+        data = self.sql(f"select * from {table}", dtype="polars")
         options = dict(mode="overwrite")
         if force: options["delta_write_options"] = {"schema_mode":"overwrite"}
         data.write_delta(table_path, **options)
+        return True
     
-    def checkout(self, table:str, version:int|str|datetime):
+    def checkout(self, table:str, version:int|str|datetime) -> bool:
         table_path = join(self.__delta_source, table)
         self.__delta_sql_context.register(table, scan_delta(table_path, version=version))
+        return True
 
-    def sql(self, query:str, lazy:bool=False) -> DataFrame | LazyFrame:
-        if not lazy: return self.__delta_sql_context.execute(query).collect()
-        return self.__delta_sql_context.execute(query)
+    def sql(self, query:str, lazy:bool=False, dtype:str="json") -> DataFrame | LazyFrame:
+        if lazy: return self.__delta_sql_context.execute(query)
+
+        data:DataFrame = self.__delta_sql_context.execute(query).collect()
+        match dtype:
+            case "polars": return data
+            case "json": return data.to_dicts()
+            case _: raise ValueError(f"'dtype' was provided as '{dtype}', type must be one of the following ['polars', 'json']")

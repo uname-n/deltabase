@@ -27,7 +27,7 @@ def test_add_data(db):
     s = time()
     db.upsert(table="test_table", primary_key="name", data=testing_data)
     e = time()
-    result = db.sql("select * from test_table")
+    result = db.sql("select * from test_table", dtype="polars")
 
     assert isinstance(result, DataFrame)
     assert result.shape == (W, H+1)
@@ -41,7 +41,7 @@ def test_first_commit(db):
 
 def test_delete_records(db):
     db.delete("test_table", "field_6 % 2 == 0")
-    result = db.sql("select * from test_table")
+    result = db.sql("select * from test_table", dtype="polars")
     assert 0 < result.shape[0] < W
     assert result.shape[1] == H+1
 
@@ -52,7 +52,7 @@ def test_second_commit(db):
 
 def test_checkout_original_commit(db):
     db.checkout("test_table", version=0)
-    result = db.sql("select * from test_table")
+    result = db.sql("select * from test_table", dtype="polars")
 
     assert isinstance(result, DataFrame)
     assert result.shape == (W, H+1)
