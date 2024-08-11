@@ -1,9 +1,10 @@
 [tool.poetry]
-name = "magic"
-version = "0.1.0"
+name = "deltadb"
+version = "0.1.1"
 description = ""
-authors = ["uname-n"]
+authors = ["uname-n <noreply@github.com>"]
 readme = "README.md"
+packages = [{include = "delta"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"

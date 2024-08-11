@@ -2,7 +2,7 @@
 
 __delta__ is a lightweight, fast, simple, and massively scalable database based on [__polars__](https://github.com/pola-rs/polars) and [__deltalake__](https://github.com/delta-io/delta-rs) designed to facilitate seamless data operations, offering features like upsert, delete, commit, and version control on your datasets, while leveraging the powerful performance of polars and deltalake.
 
-
+<!-- 
 ### Key Features
 - __Easy Connection__: Connect to your delta tables with a simple connect method.
 - __Data Manipulation__: Perform upserts, deletes, and commits effortlessly.
@@ -93,4 +93,4 @@ db.delete("test_table")
 Revert to a previous version of your table, useful for rollback operations or inspecting historical data.
 ```python
 db.checkout(table="test_table", version=0)
-```
+``` -->
