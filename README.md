@@ -1,75 +1,100 @@
 # deltadb
 
-__deltadb__ is a lightweight, fast, simple, and massively scalable database based on [__polars__](https://github.com/pola-rs/polars) and [__deltalake__](https://github.com/delta-io/delta-rs) designed to facilitate seamless data operations, offering features like upsert, delete, commit, and version control on your datasets, while leveraging the powerful performance of polars and deltalake.
+**deltadb** is a lightweight, fast, and scalable database built on [**polars**](https://github.com/pola-rs/polars) and [**deltalake**](https://github.com/delta-io/delta-rs). It is designed to streamline data operations, providing features like upsert, delete, commit, and version control while harnessing the high performance of polars and deltalake.
 
-## Install
+## Installation
+To install __deltadb__, run the following command:
+
 ```bash
 pip install deltadb
 ```
 
-## Usage
+## Key Features
+
+- **Upsert**: Efficiently insert or update records in your tables.
+- **Delete**: Remove specific records or entire tables.
+- **Commit**: Version control your data with commit functionality.
+- **Query**: Execute SQL queries and retrieve results as dictionaries or dataframes.
+- **Schema Handling**: Automatically manage schema changes during data operations.
+- **Versioning**: Revert tables to previous versions when needed.
+
+## Getting Started
+
+### Connecting to a Database
+Establish a connection to your database:
+
 ```python
 from deltadb import delta
 
-# connect to a database
+# Connect to a database at the specified path
 db = delta.connect(path="test.delta")
+```
 
-# upsert data into a table
+### Upserting Data
+Insert or update data within a table:
+
+```python
 db.upsert(
-    table="test_table", primary_key="id", 
-    data=dict(id=1, name="alice")
+    table="test_table", 
+    primary_key="id", 
+    data={"id": 1, "name": "alice"}
 )
 
-# query the data
-result = db.sql("select * from test_table")
-print(result)  # output: [dict(id=1, name="alice")]
+# Query the data
+result = db.sql("SELECT * FROM test_table")
+print(result)  # Output: [{'id': 1, 'name': 'alice'}]
 
-# commit the changes
+# Commit the changes
 db.commit("test_table")
 ```
 
----
+### Upserting Multiple Records
+Upsert multiple records simultaneously, with automatic schema management:
 
-### Upsert Multiple
 ```python
-# upsert multiple records at once, and automatically handling schema differences
 db.upsert(
-    table="test_table", primary_key="id", 
+    table="test_table", 
+    primary_key="id", 
     data=[
-        dict(id=1, name="ali"),
-        dict(id=2, name="bob", job="chef"),
-        dict(id=3, name="sam"),
+        {"id": 1, "name": "ali"},
+        {"id": 2, "name": "bob", "job": "chef"},
+        {"id": 3, "name": "sam"},
     ]
 )
 ```
 
-### Query with DataFrame Response
+### Querying Data as a DataFrame
+Execute SQL queries and return the results as a polars DataFrame for advanced data manipulation:
+
 ```python
-# return a polars dataframe for more advanced data operations
-df_result = db.sql("select * from test_table", dtype="polars")
+df_result = db.sql("SELECT * FROM test_table", dtype="polars")
 print(df_result)
 ```
 
-### Commit with Schema Diff
+### Committing with Schema Differences
+Force a commit even when there are schema differences between the current and new data:
+
 ```python
-# use force when there is a schema difference between the current and new data
 db.commit("test_table", force=True)
 ```
 
-### Delete Records
+### Deleting Records
+Remove specific records from a table using SQL or lambda functions, or delete the entire table:
+
 ```python
-# delete records with sql
+# Delete records using an SQL filter
 db.delete(table="test_table", filter="name='charles'")
 
-# or lambda
+# Delete records using a lambda function
 db.delete(table="test_table", filter=lambda row: row["name"] == "charles")
 
-# or delete a table all together
+# Delete the entire table
 db.delete("test_table")
 ```
 
-### Checkout Previous Table Version
+### Checking Out Previous Table Versions
+Revert to a previous version of a table with ease:
+
 ```python
-# revert tables to a previous version
 db.checkout(table="test_table", version=0)
 ```
