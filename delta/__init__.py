@@ -72,7 +72,7 @@ class delta:
     def upsert(self, table:str, primary_key:str, data:list[dict] | dict):
         if type(data) == dict: return self.__upsert_multiple(table, primary_key, [data])
         elif type(data) == list: return self.__upsert_multiple(table, primary_key, data)
-        else: raise ValueError(f"'data' was provided '{type(data)}', type must be 'list[dict]' or 'dict'")
+        else: raise ValueError(f"'data' was provided as '{type(data)}', type must be 'list[dict]' or 'dict'")
 
     def delete(self, table:str, filter:str|LambdaType=None):
         if not filter: 
@@ -86,7 +86,7 @@ class delta:
             filter_data = source_data.filter(
                 ~struct(source_data.collect_schema().names()).map_elements(filter, return_dtype=bool)
             )
-        else: raise ValueError(f"'filter' was provided '{type(filter)}', type must be 'callable' or 'str'")
+        else: raise ValueError(f"'filter' was provided as '{type(filter)}', type must be 'callable' or 'str'")
 
         self.__delta_sql_context.register(table, filter_data)
 
