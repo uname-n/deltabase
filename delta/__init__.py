@@ -3,8 +3,8 @@ from types import LambdaType
 from polars import SQLContext, DataFrame, LazyFrame, sql_expr, scan_delta, coalesce, struct
 from os.path import join, exists
 from os import listdir
+from shutil import rmtree
 from datetime import datetime
-
 
 class delta:
     __delta_source:str
@@ -79,7 +79,6 @@ class delta:
             self.__delta_sql_context.unregister(table)
             return
         elif type(filter) == str:
-            # filter_data = self.sql(f"select * from {table} where {filter}", lazy=True)
             source_data = self.sql(f"select * from {table}", lazy=True)
             filter_data = source_data.filter(~sql_expr(filter))
         elif type(filter) == LambdaType:
@@ -92,10 +91,17 @@ class delta:
         self.__delta_sql_context.register(table, filter_data)
 
     def commit(self, table:str, overwrite:bool=False, force:bool=False):
+        table_path = join(self.__delta_source, table)
+        if table not in self.tables: 
+            if exists(table_path): 
+                rmtree(table_path)
+                return
+            else:
+                raise AssertionError(f"table, '{table}' was not found.")
         data = self.sql(f"select * from {table}")
         options = dict(mode="overwrite")
         if force: options["delta_write_options"] = {"schema_mode":"overwrite"}
-        data.write_delta(join(self.__delta_source, table), **options)
+        data.write_delta(table_path, **options)
     
     def checkout(self, table:str, version:int|str|datetime):
         table_path = join(self.__delta_source, table)

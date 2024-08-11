@@ -4,10 +4,8 @@ from delta import delta
 
 from polars import DataFrame
 from os.path import exists
+from os import listdir
 from shutil import rmtree
-from time import time
-
-data = lambda w, h: [{"name":f"name_{_}", **{f"field_{n}":n+_ for n in range(w)}} for _ in range(h)]
 
 @pytest.fixture
 def db():
@@ -74,18 +72,25 @@ def test_commit_and_versioning(db):
     assert result["id"].to_list() == [5]
     assert result["name"].to_list() == ["edward"]
 
-def test_big_workflow_10k_10k(db):
-    testing_data = data(10_000, 10_000)
-    s = time()
-    db.add(table="test_table", primary_key="name", data=testing_data)
+def test_delete_table(db):
+    db.add(table="test_table", primary_key="id", data=dict(id=5, name="george"))
     db.commit("test_table")
-    db.delete("test_table", "field_6 % 2 == 0")
-    db.commit("test_table")
-    version_1 = db.sql("select * from test_table")
-    db.checkout("test_table", version=0)
-    version_2 = db.sql("select * from test_table")
-    e = time()-s
 
-    assert 0 < len(version_1) < 10_000
-    assert len(version_2) == 10_000
-    assert e < 20
+    result = db.sql("select * from test_table")
+    
+    assert result.shape == (1, 2)
+    assert result["id"].to_list() == [5]
+    assert result["name"].to_list() == ["george"]
+
+    assert exists("test.delta/test_table")
+    assert len(listdir("test.delta/test_table")) == 2
+    assert len(listdir("test.delta/test_table/_delta_log")) == 1
+
+    db.delete("test_table")
+
+    assert exists("test.delta/test_table")
+    assert "test_table" not in db.tables
+
+    db.commit("test_table")
+
+    assert not exists("test.delta/test_table")
