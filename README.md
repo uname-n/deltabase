@@ -19,7 +19,6 @@
 - [Performance](#performance)
 
 ## Installation
-<div style="text-align: right;"><small>["fsf"](#top)</small></div>
 To install __DeltaDB__, run the following command:
 
 ```bash
