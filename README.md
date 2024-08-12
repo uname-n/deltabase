@@ -5,7 +5,6 @@
 
 ## Table of Contents
 
-- [DeltaDB](#deltadb)
 - [Installation](#installation)
 - [Key Features](#key-features)
 - [Getting Started](#getting-started)
