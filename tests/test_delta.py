@@ -70,7 +70,6 @@ def test_delete_record_lambda(db):
     assert "charles" not in result["name"].to_list()
     assert result["name"].to_list() == ["edward"]
 
-
 def test_schema_override(db):
     db.upsert(table="test_table", primary_key="id", data=dict(id=5, name="edward"))
     db.commit("test_table")

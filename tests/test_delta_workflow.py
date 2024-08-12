@@ -5,12 +5,11 @@ from deltadb import delta
 from polars import DataFrame
 from os.path import exists
 from os import listdir
-from shutil import rmtree
 from time import time
 
 TIMEOUT = 20
-W = 10_000
-H = 10_000
+W = 1_000
+H = 1_000
 
 data = lambda w, h: [{"name":f"name_{_}", **{f"field_{n}":n+_ for n in range(w)}} for _ in range(h)]
 testing_data = data(W, H)

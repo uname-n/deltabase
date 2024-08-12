@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.2, pytest-8.3.2, pluggy-1.5.0 -- deltadb/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: deltadb
+configfile: pyproject.toml
+collecting ... collected 2 items
+
+tests/test_comparision.py::test_delta[1000-1000] PASSED                  [ 50%]
+tests/test_comparision.py::test_sql[1000-1000] PASSED                    [100%]
+
+============================== slowest durations ===============================
+0.76s call     tests/test_comparision.py::test_sql[1000-1000]
+0.20s call     tests/test_comparision.py::test_delta[1000-1000]
+0.15s setup    tests/test_comparision.py::test_sql[1000-1000]
+0.15s setup    tests/test_comparision.py::test_delta[1000-1000]
+0.00s teardown tests/test_comparision.py::test_delta[1000-1000]
+0.00s teardown tests/test_comparision.py::test_sql[1000-1000]
+============================== 2 passed in 1.31s ===============================
