@@ -35,6 +35,15 @@ def test_add_multiple_records(db):
     assert set(result["id"].to_list()) == {2, 3}
     assert set(result["name"].to_list()) == {"bob", "charles"}
 
+def test_update_record(db):
+    db.upsert(table="test_table", primary_key="id", data=dict(id=2, name="bob"))
+    db.upsert(table="test_table", primary_key="id", data=dict(id=2, name="sam"))
+    result = db.sql("select * from test_table", dtype="polars")
+
+    assert result.shape == (1, 2)
+    assert set(result["id"].to_list()) == {2}
+    assert set(result["name"].to_list()) == {"sam"}
+
 def test_add_mismatch_schema_records(db):
     db.upsert(table="test_table", primary_key="id", data=[dict(id=2, name="bob", job="chef"), dict(id=3, name="charles")])
     result = db.sql("select * from test_table", dtype="polars")
@@ -42,6 +51,15 @@ def test_add_mismatch_schema_records(db):
     assert result.shape == (2, 3)
     assert set(result["id"].to_list()) == {2, 3}
     assert set(result["name"].to_list()) == {"bob", "charles"}
+
+def test_update_mismatch_schema_record(db):
+    db.upsert(table="test_table", primary_key="id", data=dict(id=2, name="bob"))
+    db.upsert(table="test_table", primary_key="id", data=[dict(id=2, name="sam"), dict(id=3, name="alice", job="chef")])
+    result = db.sql("select * from test_table", dtype="polars")
+
+    assert result.shape == (2, 3)
+    assert set(result["id"].to_list()) == {2, 3}
+    assert set(result["name"].to_list()) == {"sam", "alice"}
 
 def test_json_output(db):
     db.upsert(table="test_table", primary_key="id", data=dict(id=5, name="james"))
