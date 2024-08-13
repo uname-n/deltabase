@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2024  Darryl McCulley
+# Copyright 2024  Darryl McCulley
 
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
-#     (at your option) any later version.
+#     any later version.
 
 #     This program is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -30,11 +30,29 @@ class delta:
     __delta_sql_context:SQLContext=SQLContext(frames=[])
 
     @property
-    def tables(self):
+    def tables(self) -> list[str]:
+        """ list tables in the sql context.
+
+            **return**:
+                - **tables**: a list of table names
+
+            >>> db = delta.connect("my.db")
+            >>> tables = db.tables
+        """
         return self.__delta_sql_context.tables()
 
     @classmethod
     def connect(cls, path:str):
+        """ connect to an existing database or create a new one.
+
+            **args**:
+                - **path**: path to the database
+
+            **return**:
+                - **delta**: a new or existing database instance
+
+            >>> db = delta.connect("my.db")
+        """
         delta_cls = cls()
         delta_cls.__delta_source = path
 
@@ -48,6 +66,7 @@ class delta:
         return delta_cls
     
     def __sync_data(self, primary_key:str, target_data:LazyFrame, source_data:LazyFrame) -> LazyFrame:
+        """sync data between target and source based on the primary key."""
         update_data = source_data.join(
             target_data,
             on=primary_key,
@@ -70,6 +89,7 @@ class delta:
         return update_data
     
     def __upsert_multiple(self, table:str, primary_key:str, data:list[dict]) -> bool:
+        """upsert multiple records into the specified table."""
         if table not in self.tables:
             target_data = LazyFrame(data)
             self.__delta_sql_context.register(table, target_data)
@@ -89,12 +109,39 @@ class delta:
         self.__delta_sql_context.register(table, update_data)
         return True
 
-    def upsert(self, table:str, primary_key:str, data:list[dict] | dict):
+    def upsert(self, table:str, primary_key:str, data:list[dict] | dict) -> bool:
+        """ upsert single or multiple records with automatic schema management. the sql context is updated immediately, but a commit must be made to persist on disk.
+
+            **args**:
+                - **table**: name of the table
+                - **primary_key**: name of the primary key in the records
+                - **data**: records to upsert
+
+            **return**:
+                - **success**: true if the operation is successful
+
+            >>> db = delta.connect("my.db")
+            >>> db.upsert(table="mytable", primary_key="id", data=dict(id=1, name="bob"))
+        """
         if type(data) == dict: return self.__upsert_multiple(table, primary_key, [data])
         elif type(data) == list: return self.__upsert_multiple(table, primary_key, data)
         else: raise ValueError(f"'data' was provided as '{type(data)}', type must be 'list[dict]' or 'dict'")
 
     def delete(self, table:str, filter:str|LambdaType=None) -> bool:
+        """ delete an entire table or records from a table using a sql condition or lambda function filter. (sql is much faster)
+
+            **args**:
+                - **table**: name of the table
+                - **filter**: sql condition or lambda function
+
+            **return**:
+                - **success**: true if the operation is successful
+
+            >>> db = delta.connect("my.db")
+            >>> db.delete(table="mytable", filter="name='bob'")
+            >>> db.delete(table="mytable", filter=lambda row: row["name"] == "bob")
+            >>> db.delete(table="mytable")
+        """
         if not filter: 
             self.__delta_sql_context.unregister(table)
             return
@@ -112,6 +159,19 @@ class delta:
         return True
 
     def commit(self, table:str, force:bool=False) -> bool:
+        """ commit a table's current sql context to a delta table.
+
+            **args**:
+                - **table**: name of the table
+                - **force**: allows changes to the delta table schema. default: false
+
+            **return**:
+                - **success**: true if the operation is successful
+
+            >>> db = delta.connect("my.db")
+            >>> db.upsert(table="mytable", primary_key="id", data=dict(id=1, name="bob"))
+            >>> db.commit("mytable")
+        """
         table_path = join(self.__delta_source, table)
         if table not in self.tables: 
             if exists(table_path): 
@@ -126,11 +186,35 @@ class delta:
         return True
     
     def checkout(self, table:str, version:int|str|datetime) -> bool:
+        """ revert a table to a previous commit.
+
+            **args**:
+                - **table**: name of the table
+                - **version**: datetime or version number, starting at 0
+
+            **return**:
+                - **success**: true if the operation is successful
+
+            >>> db = delta.connect("my.db")
+            >>> db.checkout("mytable", version=0)
+        """
         table_path = join(self.__delta_source, table)
         self.__delta_sql_context.register(table, scan_delta(table_path, version=version))
         return True
 
     def sql(self, query:str, lazy:bool=False, dtype:str="json") -> DataFrame | LazyFrame:
+        """ query data from any delta table.
+
+            **args**:
+                - **query**: sql statement to execute
+                - **dtype**: set the desired output dtype. options: ['polars', 'json']. default: 'json'
+
+            **return**:
+                - **data**: output of the query result
+
+            >>> db = delta.connect("my.db")
+            >>> db.sql("select * from mytable")
+        """
         if lazy: return self.__delta_sql_context.execute(query)
 
         data:DataFrame = self.__delta_sql_context.execute(query).collect()
