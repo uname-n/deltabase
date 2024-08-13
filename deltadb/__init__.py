@@ -88,12 +88,11 @@ class delta:
         
         return update_data
     
-    def __upsert_multiple(self, table:str, primary_key:str, data:list[dict]) -> bool:
+    def __upsert_multiple(self, table:str, primary_key:str, data:LazyFrame) -> bool:
         """upsert multiple records into the specified table."""
         if table not in self.tables:
-            target_data = LazyFrame(data)
-            self.__delta_sql_context.register(table, target_data)
-            return target_data
+            self.__delta_sql_context.register(table, data)
+            return True
         
         table_path = join(self.__delta_source, table)
         if exists(table_path):
@@ -103,19 +102,18 @@ class delta:
         else:
             source_data = self.sql(f"select * from {table}", lazy=True)
 
-        target_data = LazyFrame(data)
-        update_data = self.__sync_data(primary_key, target_data, source_data)
+        update_data = self.__sync_data(primary_key, data, source_data)
 
         self.__delta_sql_context.register(table, update_data)
         return True
 
-    def upsert(self, table:str, primary_key:str, data:list[dict] | dict) -> bool:
+    def upsert(self, table:str, primary_key:str, data:list[dict] | dict | DataFrame | LazyFrame) -> bool:
         """ upsert single or multiple records with automatic schema management. the sql context is updated immediately, but a commit must be made to persist on disk.
 
             **args**:
                 - **table**: name of the table
                 - **primary_key**: name of the primary key in the records
-                - **data**: records to upsert
+                - **data**: records to upsert; can be a list of dictionaries, a single dictionary, a DataFrame, or a LazyFrame
 
             **return**:
                 - **success**: true if the operation is successful
@@ -123,9 +121,12 @@ class delta:
             >>> db = delta.connect("my.db")
             >>> db.upsert(table="mytable", primary_key="id", data=dict(id=1, name="bob"))
         """
-        if type(data) == dict: return self.__upsert_multiple(table, primary_key, [data])
-        elif type(data) == list: return self.__upsert_multiple(table, primary_key, data)
+        if type(data) == dict: data = LazyFrame([data])
+        elif type(data) == list: data = LazyFrame(data)
+        elif type(data) == DataFrame: data = data.lazy()
+        elif type(data) == LazyFrame: data = data
         else: raise ValueError(f"'data' was provided as '{type(data)}', type must be 'list[dict]' or 'dict'")
+        return self.__upsert_multiple(table, primary_key, data)
 
     def delete(self, table:str, filter:str|LambdaType=None) -> bool:
         """ delete an entire table or records from a table using a sql condition or lambda function filter. (sql is much faster)
@@ -222,3 +223,4 @@ class delta:
             case "polars": return data
             case "json": return data.to_dicts()
             case _: raise ValueError(f"'dtype' was provided as '{dtype}', type must be one of the following ['polars', 'json']")
+

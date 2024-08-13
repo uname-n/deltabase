@@ -2,7 +2,7 @@ import pytest
 
 from deltadb import delta
 
-from polars import DataFrame
+from polars import DataFrame, LazyFrame
 from os.path import exists
 from os import listdir
 from shutil import rmtree
@@ -137,3 +137,22 @@ def test_delete_table(db):
     db.commit("test_table")
 
     assert not exists("test.delta/test_table")
+
+def test_add_dataframe(db):
+    db.upsert(table="test_table", primary_key="id", data=DataFrame([dict(id=1, name="alice")]))
+    result = db.sql("select * from test_table", dtype="polars")
+
+    assert isinstance(result, DataFrame)
+    assert result.shape == (1, 2)
+    assert result["id"].to_list() == [1]
+    assert result["name"].to_list() == ["alice"]
+
+
+def test_add_lazyframe(db):
+    db.upsert(table="test_table", primary_key="id", data=LazyFrame([dict(id=1, name="alice")]))
+    result = db.sql("select * from test_table", dtype="polars")
+
+    assert isinstance(result, DataFrame)
+    assert result.shape == (1, 2)
+    assert result["id"].to_list() == [1]
+    assert result["name"].to_list() == ["alice"]
