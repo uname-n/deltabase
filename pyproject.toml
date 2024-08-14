@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deltadb"
-version = "0.1.6"
+version = "0.1.7"
 description = ""
 authors = ["uname-n <noreply@github.com>"]
 readme = "README.md"
@@ -10,7 +10,12 @@ packages = [{include = "deltadb"}]
 python = "^3.12"
 polars = "^1.4.1"
 deltalake = "^0.18.2"
+ipython = "^8.26.0"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
 pytest = "^8.3.2"
+nbconvert = "^7.16.4"
 
 [build-system]
 requires = ["poetry-core"]
