@@ -65,6 +65,10 @@ class delta:
         
         return delta_cls
     
+    def register(self, table:str, pyarrow_options:dict):
+        table_path = join(self.__delta_source, table)
+        self.__delta_sql_context.register(table, scan_delta(table_path, pyarrow_options=pyarrow_options))
+
     def __sync_data(self, primary_key:str, target_data:LazyFrame, source_data:LazyFrame) -> LazyFrame:
         """sync data between target and source based on the primary key."""
         update_data = source_data.join(
@@ -159,7 +163,7 @@ class delta:
         self.__delta_sql_context.register(table, filter_data)
         return True
 
-    def commit(self, table:str, force:bool=False) -> bool:
+    def commit(self, table:str, force:bool=False, partition_by:list[str]=None) -> bool:
         """ commit a table's current sql context to a delta table.
 
             **args**:
@@ -181,8 +185,11 @@ class delta:
             else:
                 raise AssertionError(f"table, '{table}' was not found.")
         data = self.sql(f"select * from {table}", dtype="polars")
-        options = dict(mode="overwrite")
-        if force: options["delta_write_options"] = {"schema_mode":"overwrite"}
+        options = dict(mode="overwrite", delta_write_options=dict())
+
+        if partition_by: options["delta_write_options"]["partition_by"] = partition_by
+        if force: options["delta_write_options"]["schema_mode"] = "overwrite"
+
         data.write_delta(table_path, **options)
         return True
     
@@ -223,4 +230,3 @@ class delta:
             case "polars": return data
             case "json": return data.to_dicts()
             case _: raise ValueError(f"'dtype' was provided as '{dtype}', type must be one of the following ['polars', 'json']")
-

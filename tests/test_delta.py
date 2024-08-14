@@ -156,3 +156,17 @@ def test_add_lazyframe(db):
     assert result.shape == (1, 2)
     assert result["id"].to_list() == [1]
     assert result["name"].to_list() == ["alice"]
+
+def test_commit_with_partitions(db):
+    db.upsert(table="test_table", primary_key="id", data=LazyFrame([dict(id=1, name="alice", job="teacher")]))
+    db.upsert(table="test_table", primary_key="id", data=LazyFrame([dict(id=2, name="john", job="chef")]))
+    db.commit("test_table", partition_by=["job"])
+
+    db.register(table="test_table", pyarrow_options={"partitions": [("job", "=", "chef")]})
+
+    result = db.sql("select * from test_table", dtype="polars")
+
+    assert isinstance(result, DataFrame)
+    assert result.shape == (1, 3)
+    assert result["id"].to_list() == [2]
+    assert result["name"].to_list() == ["john"]
