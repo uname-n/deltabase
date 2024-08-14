@@ -35,10 +35,18 @@ class delta_magic (Magics):
         if not self.db: return "connect to a database first. %connect path/to/database"
         return self.db.tables
     
+    @line_magic
+    def register(self, line:str) -> list[str]:
+        if not self.db: return "connect to a database first. %connect path/to/database"
+        args = line.split("/")
+        assert len(args) == 2, "invalid. %register {delta_source}/{table}"
+        delta_source, table = args
+        return self.db.register(table=table, delta_source=delta_source)
+
     @cell_magic
     def sql(self, line:str, cell:str):
         if not self.db: return "connect to a database first. %connect path/to/database"
-        return self.db.sql(query=cell, dtype="polars")
+        return self.db
 
 def load_ipython_extension(ipython):
     delta = delta_magic(ipython)

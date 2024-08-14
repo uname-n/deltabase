@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deltadb"
-version = "0.1.7"
+version = "0.1.8"
 description = ""
 authors = ["uname-n <noreply@github.com>"]
 readme = "README.md"

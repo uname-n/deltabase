@@ -24,6 +24,8 @@ from os import listdir
 from shutil import rmtree
 from datetime import datetime
 
+from deltalake.exceptions import TableNotFoundError
+
 class delta:
     __delta_source:str
     __delta_sql_context:SQLContext=SQLContext(frames=[])
@@ -64,9 +66,16 @@ class delta:
         
         return delta_cls
     
-    def register(self, table:str, pyarrow_options:dict):
-        table_path = join(self.__delta_source, table)
-        self.__delta_sql_context.register(table, scan_delta(table_path, pyarrow_options=pyarrow_options))
+    def register(self, table:str=None, delta_source:str=None, pyarrow_options:dict=None, alias:str=None):
+        if delta_source: table_path = join(delta_source, table)
+        else: table_path = join(self.__delta_source, table)
+        options = dict()
+        if pyarrow_options: options["pyarrow_options"] = pyarrow_options
+        try: 
+            self.__delta_sql_context.register(alias if alias else table, scan_delta(table_path, **options))
+            return True
+        except TableNotFoundError as e: return False
+        except FileNotFoundError as e: return False
 
     def __sync_data(self, primary_key:str, target_data:LazyFrame, source_data:LazyFrame) -> LazyFrame:
         """sync data between target and source based on the primary key."""

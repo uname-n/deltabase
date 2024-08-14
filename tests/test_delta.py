@@ -170,3 +170,7 @@ def test_commit_with_partitions(db):
     assert result.shape == (1, 3)
     assert result["id"].to_list() == [2]
     assert result["name"].to_list() == ["john"]
+
+def test_register_non_existing_table(db):
+    result = db.register(table="test_table")
+    assert result == False
