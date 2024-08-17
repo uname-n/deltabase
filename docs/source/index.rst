@@ -5,6 +5,7 @@
 
 What is deltabase?
 =====================================
+
 .. toctree::
    :maxdepth: 3
    :caption: Table of Contents
@@ -13,15 +14,3 @@ What is deltabase?
    Home <self>
    Getting Started <getting_started>
    API Reference <modules>
-
-=====================================
-Something
-=====================================
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus est massa, facilisis nec turpis et, mattis ullamcorper velit. Donec et aliquet erat. Aliquam id tortor eget tortor viverra laoreet vitae vel felis. Pellentesque rhoncus ligula vel mi venenatis, sit amet congue quam sagittis. Ut cursus accumsan neque, vitae viverra velit finibus ac. Nullam in nulla sed sapien scelerisque scelerisque. Aliquam non imperdiet leo. Aenean non velit eros. Ut ac pretium purus, id accumsan eros. Morbi id pulvinar justo. Vivamus varius fermentum diam, sed auctor enim commodo ut.
-
-=====================================
-Something Else
-=====================================
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus est massa, facilisis nec turpis et, mattis ullamcorper velit. Donec et aliquet erat. Aliquam id tortor eget tortor viverra laoreet vitae vel felis. Pellentesque rhoncus ligula vel mi venenatis, sit amet congue quam sagittis. Ut cursus accumsan neque, vitae viverra velit finibus ac. Nullam in nulla sed sapien scelerisque scelerisque. Aliquam non imperdiet leo. Aenean non velit eros. Ut ac pretium purus, id accumsan eros. Morbi id pulvinar justo. Vivamus varius fermentum diam, sed auctor enim commodo ut.
