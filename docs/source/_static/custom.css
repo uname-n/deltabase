@@ -1,0 +1,14 @@
+.wy-nav-content {
+    max-width: none;
+    width: auto;
+}
+
+.wy-side-nav-search a.icon-home {
+    font-size: 0; /* Hide the text by making it effectively invisible */
+}
+
+.wy-side-nav-search a.icon-home img.logo {
+    font-size: initial; /* Ensure the logo image is not affected */
+    padding-bottom: 25px;
+    margin: auto;
+}

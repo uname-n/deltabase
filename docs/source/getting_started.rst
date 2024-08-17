@@ -3,16 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-What is deltabase?
+GETTING STARTED
 =====================================
 .. toctree::
-   :maxdepth: 3
-   :caption: Table of Contents
-   :hidden:
-   
-   Home <self>
-   Getting Started <getting_started>
-   API Reference <modules>
+   :maxdepth: 1
 
 =====================================
 Something
