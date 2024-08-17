@@ -188,3 +188,9 @@ def test_json_output(db):
     assert isinstance(result, list)
     assert isinstance(result[0], dict)
     assert result[0] == dict(id=5, name="a")
+
+def test_override_dtype(db):
+    db.config.dtype = "polars"
+    db.upsert(table="test_table", primary_key="id", data=dict(id=5, name="a"))
+    result = db.sql("select * from test_table")
+    assert isinstance(result, DataFrame)

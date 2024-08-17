@@ -28,18 +28,27 @@ from deltalake.exceptions import TableNotFoundError
 
 T = TypeVar("T", bound="delta")
 
+class delta_config:
+    dtype:str="json" 
+
 class delta:
     __delta_source:str
     __delta_sql_context:SQLContext=SQLContext(frames=[])
+    config:delta_config
 
     @property
     def tables(self):
+        """ list tables in the sql context. 
+        """
         return self.__delta_sql_context.tables()
 
     @classmethod
-    def connect(cls: Type[T], path:str) -> T:
+    def connect(cls: Type[T], path:str, config:delta_config=delta_config()) -> T:
+        """ returns `delta` class, if `path` is local tables will be loaded. 
+        """
         delta_cls = cls()
         delta_cls.__delta_source = path
+        delta_cls.config = config
 
         if not exists(path) or "://" in path: return delta_cls
         
@@ -63,6 +72,8 @@ class delta:
         version:int|str|datetime=None,
         data:DataFrame|LazyFrame=None,
     ) -> Exception:
+        """ register data to the local sql context. 
+        """
         table_path = join(self.__delta_source, database, table)
         options = dict()
         if pyarrow_options: options["pyarrow_options"] = pyarrow_options
@@ -71,6 +82,8 @@ class delta:
         except (TableNotFoundError, FileNotFoundError) as e: return e
     
     def __sync_data(self, primary_key:str, target_data:LazyFrame, source_data:LazyFrame) -> LazyFrame:
+        """ sync data between target and source based on the primary key. 
+        """
         update_data = source_data.join(
             target_data,
             on=primary_key,
@@ -98,6 +111,10 @@ class delta:
         data:list[dict] | dict | DataFrame | LazyFrame,
         database:str="default",
     ) -> Exception:
+        """ upsert single or multiple records with automatic schema management. 
+            
+            the sql context is updated immediately, but a commit must be made to persist. 
+        """
         if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict): data = from_dicts(data).lazy()
         elif isinstance(data, dict): data = from_dict(data).lazy()
         elif isinstance(data, DataFrame): data = data.lazy()
@@ -121,6 +138,10 @@ class delta:
         return self.register(database=database, table=table, data=update_data)
     
     def delete(self, table:str, filter:str|LambdaType="*", database:str="default") -> Exception:
+        """ delete an entire table or records from a table using a sql condition or lambda function filter. (sql is much faster) 
+            
+            only deletes from sql context, files on disk or in cloud are not affected.
+        """
         table_path = join(self.__delta_source, database, table)
         if filter == "*": 
             self.__delta_sql_context.unregister(table_path)
@@ -138,7 +159,10 @@ class delta:
 
         return self.register(database=database, table=table, data=filter_data)
 
-    def sql(self, query:str, lazy:bool=False, dtype:str="json") -> DataFrame | LazyFrame:
+    def sql(self, query:str, lazy:bool=False, dtype:str=None) -> DataFrame | LazyFrame:
+        """ query data from any delta table in sql context. 
+        """
+        dtype = dtype if dtype else self.config.dtype 
         if lazy: return self.__delta_sql_context.execute(query)
         data:DataFrame = self.__delta_sql_context.execute(query).collect()
         match dtype:
@@ -152,6 +176,8 @@ class delta:
         partition_by:list[str]=None,
         database:str="default",
     ) -> Exception:
+        """ commit a table's current sql context to a delta table. 
+        """
         table_path = join(self.__delta_source, database, table)
         data = self.sql(f"select * from {table}", dtype="polars")
         
@@ -163,4 +189,6 @@ class delta:
         except Exception as e: return e
 
     def checkout(self, table:str, version:int|str|datetime, database:str="default") -> Exception:
+        """ revert a table to a previous commit. 
+        """
         return self.register(database=database, table=table, version=version)
