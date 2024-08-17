@@ -74,6 +74,27 @@ def test_add_mismatch_schema(db):
     assert set(result["name"].to_list()) == set(["b","c"])
     assert set(result["job"].to_list()) == set(["j", None])
 
+def test_update_record(db):
+    db.upsert(table="test_table", primary_key="id", data=dict(id=2, name="a"))
+    db.upsert(table="test_table", primary_key="id", data=dict(id=2, name="b"))
+    result = db.sql("select * from test_table", dtype="polars")
+
+    assert isinstance(result, DataFrame)
+    assert result.shape == (1, 2)
+    assert set(result["id"].to_list()) == set([2])
+    assert set(result["name"].to_list()) == set(["b"])
+
+def test_update_mismatch_schema_record(db):
+    db.upsert(table="test_table", primary_key="id", data=dict(id=2, name="a"))
+    db.upsert(table="test_table", primary_key="id", data=[dict(id=2, name="b"), dict(id=3, name="c", job="j")])
+    result = db.sql("select * from test_table", dtype="polars")
+
+    assert isinstance(result, DataFrame)
+    assert result.shape == (2, 3)
+    assert set(result["id"].to_list()) == set([2, 3])
+    assert set(result["name"].to_list()) == set(["b", "c"])
+    assert set(result["job"].to_list()) == set([None, "j"])
+
 def test_delete_record_sql(db):
     db.upsert(table="test_table", primary_key="id", data=dict(id=5, name="a"))
     db.upsert(table="test_table", primary_key="id", data=dict(id=6, name="b"))
@@ -160,3 +181,10 @@ def test_commit_with_partitions(db):
 def test_register_non_existing_table(db):
     err = db.register(table="test_table")
     assert isinstance(err, Exception)
+
+def test_json_output(db):
+    db.upsert(table="test_table", primary_key="id", data=dict(id=5, name="a"))
+    result = db.sql("select * from test_table", dtype="json")
+    assert isinstance(result, list)
+    assert isinstance(result[0], dict)
+    assert result[0] == dict(id=5, name="a")
