@@ -5,3 +5,4 @@ __pycache__
 .pytest_cache
 _playground.py
 *.db
+.DS_Store
