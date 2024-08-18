@@ -7,7 +7,7 @@
   <a href="https://uname-n.github.io/deltadb">documentation</a>
 </p>
 
-**DeltaBase** is a lightweight comprehensive solution for managing Delta Tables in both local and cloud environments. Built on [**polars**](https://github.com/pola-rs/polars) and [**deltalake**](https://github.com/delta-io/delta-rs), it is designed to streamline data operations, providing features like upsert, delete, commit, and version control while harnessing the high performance of **polars** and **deltalake**. Whether you're a data engineer, analyst, or developer, DeltaBase empowers you to efficiently handle complex data operations, ensuring data consistency, versioning, and seamless integration with your workflows.
+**DeltaBase** is a lightweight, comprehensive solution for managing Delta Tables in both local and cloud environments. Built on the high-performance frameworks [**polars**](https://github.com/pola-rs/polars) and [**deltalake**](https://github.com/delta-io/delta-rs), DeltaBase streamlines data operations with features like upsert, delete, commit, and version control. Designed for data engineers, analysts, and developers, it ensures data consistency, efficient versioning, and seamless integration into your workflows.
 
 ## Setup
 To install **deltabase**, run the following command:
