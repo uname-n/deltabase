@@ -1,6 +1,6 @@
 import pytest
 
-from deltadb import delta
+from deltabase import delta
 
 from polars import DataFrame
 from os.path import exists
@@ -24,7 +24,8 @@ def test_connect(db):
 
 def test_add_data(db):
     s = time()
-    db.upsert(table="test_table", primary_key="name", data=testing_data)
+    err = db.upsert(table="test_table", primary_key="name", data=testing_data)
+    assert not err, err
     e = time()
     result = db.sql("select * from test_table", dtype="polars")
 
@@ -33,24 +34,32 @@ def test_add_data(db):
     assert (e-s) < TIMEOUT
 
 def test_first_commit(db):
-    db.commit("test_table")
-    assert exists("test.delta/test_table")
-    assert len(listdir("test.delta/test_table")) == 2
-    assert len(listdir("test.delta/test_table/_delta_log")) == 1
+    err = db.commit("test_table")
+    assert not err, err
+
+    assert exists("test.delta/default/test_table")
+    assert len(listdir("test.delta/default/test_table")) == 2
+    assert len(listdir("test.delta/default/test_table/_delta_log")) == 1
 
 def test_delete_records(db):
-    db.delete("test_table", "field_6 % 2 == 0")
+    err = db.delete("test_table", filter="field_6 % 2 == 0")
+    assert not err, err
+
     result = db.sql("select * from test_table", dtype="polars")
     assert 0 < result.shape[0] < W
     assert result.shape[1] == H+1
 
 def test_second_commit(db):
-    db.commit("test_table")
-    assert len(listdir("test.delta/test_table")) == 3
-    assert len(listdir("test.delta/test_table/_delta_log")) == 2
+    err = db.commit("test_table")
+    assert not err, err
+
+    assert len(listdir("test.delta/default/test_table")) == 3
+    assert len(listdir("test.delta/default/test_table/_delta_log")) == 2
 
 def test_checkout_original_commit(db):
-    db.checkout("test_table", version=0)
+    err = db.checkout("test_table", version=1)
+    assert not err, err
+
     result = db.sql("select * from test_table", dtype="polars")
 
     assert isinstance(result, DataFrame)
