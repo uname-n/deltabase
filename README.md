@@ -4,7 +4,7 @@
 </h1>
 
 <p align="center">
-  <a href="https://uname-n.github.io/deltadb">documentation</a>
+  <a href="https://uname-n.github.io/deltabase">documentation (wip)</a>
 </p>
 
 **DeltaBase** is a lightweight, comprehensive solution for managing Delta Tables in both local and cloud environments. Built on the high-performance frameworks [**polars**](https://github.com/pola-rs/polars) and [**deltalake**](https://github.com/delta-io/delta-rs), DeltaBase streamlines data operations with features like upsert, delete, commit, and version control. Designed for data engineers, analysts, and developers, it ensures data consistency, efficient versioning, and seamless integration into your workflows.
