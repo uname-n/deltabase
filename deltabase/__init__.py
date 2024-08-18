@@ -67,12 +67,9 @@ class delta:
         if not exists(path) or "://" in path: return delta_cls
         
         for database in listdir(delta_cls.__delta_source):
-            print(database)
             for table in listdir(join(delta_cls.__delta_source, database)):
-                print(table)
                 table_path = join(delta_cls.__delta_source, database, table)
                 if exists(table_path):
-                    print(table_path)
                     try: delta_cls.register(database=database, table=table)
                     except Exception as e: raise e
 
