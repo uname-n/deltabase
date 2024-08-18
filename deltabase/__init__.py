@@ -34,48 +34,35 @@ class delta_config:
 class delta:
     __delta_source:str
     __delta_sql_context:SQLContext=SQLContext(frames=[])
-    config:delta_config = delta_config()
+    config:delta_config
 
     @property
     def tables(self):
-        """ List all tables within the SQL context.
+        """ list all tables within the sql context.
 
-            :returns: A list of table names available in the SQL context.
-            :rtype: list[str]
+            returns a list of table names available in the sql context.
 
-            **Example**:
 
-            .. code-block:: python
-
-                >>> db.tables  # output: ["table_1", "table_2"]
+            >>> db.tables  # output: ["table_1", "table_2"]
         """
         return self.__delta_sql_context.tables()
 
     @classmethod
-    def connect(cls: Type[T], path:str, config:delta_config=None) -> T:
-        """ Loads tables from the local path if provided, otherwise connects to a remote source.
+    def connect(cls: Type[T], path:str, config:delta_config=delta_config()) -> T:
+        """ loads tables from the local path if provided, otherwise connects to a remote source.
 
-            :param path: The file path or URI to connect to, can be a local directory or remote storage.
-            :type path: str
-            :param config: Configuration settings for the delta instance. Defaults to an instance of `delta_config`.
-            :type config: delta_config, optional
-            :returns: An instance of the delta class.
-            :rtype: delta
-
-            **Example**:
-
-            .. code-block:: python
-
-                # local
-                >>> db.connect("path/mydelta")
-                # azure
-                >>> db.connect("az://<container>/<path>")
-                >>> db.connect("adl://<container>/<path>")
-                >>> db.connect("abfs[s]://<container>/<path>")
+            **args**:
+                - **path**: the file path or uri to connect to, can be a local directory or remote storage.
+                - **config**: `optional` configuration settings for the delta instance. default is an instance of `delta_config`.
+                
+            >>> db = delta.connect(path="local_path/mydelta")
+            >>> db = delta.connect(path="az://<container>/<path>")
+            >>> db = delta.connect(path="s3://<bucket>/<path>")
+            >>> db = delta.connect(path="gs://<bucket>/<path>")
         """
         delta_cls = cls()
         delta_cls.__delta_source = path
-        if config: delta_cls.config = config
+        delta_cls.config = config
 
         if not exists(path) or "://" in path: return delta_cls
         
@@ -99,33 +86,22 @@ class delta:
         version:int|str|datetime=None,
         data:DataFrame|LazyFrame=None,
     ) -> Exception:
-        """ Registers the provided data, or loads the table from the delta source if no data is provided.
+        """ registers the provided data, or loads the table from the delta source if no data is provided.
 
-            :param table: The name of the table to register.
-            :type table: str
-            :param pyarrow_options: Options for loading the table using pyarrow, defaults to None.
-            :type pyarrow_options: dict, optional
-            :param alias: An alias to use for the table within the SQL context, defaults to None.
-            :type alias: str, optional
-            :param database: The name of the database where the table is located, defaults to 'default'.
-            :type database: str, optional
-            :param version: The version of the table to load, can be an integer, string, or datetime, defaults to None.
-            :type version: int | str | datetime, optional
-            :param data: A `DataFrame` or `LazyFrame` to register instead of loading from the delta source, defaults to None.
-            :type data: DataFrame | LazyFrame, optional
-            :returns: An exception if an error occurs, otherwise None.
-            :rtype: Exception or None
+            **args**:
+            - **table**: the name of the table to register.
+            - **pyarrow_options**: `optional` options for loading the table using pyarrow.
+            - **alias**: `optional` an alias to use for the table within the sql context.
+            - **database**: `optional` the name of the database where the table is located. default is `'default'`.
+            - **version**: `optional` the version of the table to load, can be an integer, string, or datetime.
+            - **data**: `optional` a `DataFrame` or `LazyFrame` to register instead of loading from the delta source.
 
-            **Example**:
-
-            .. code-block:: python
-
-                >>> db.register(database="mydatabase", table="mytable", data=...)
-                >>> db.register(database="mydatabase", table="mytable", version=1)
-                >>> db.register(database="mydatabase", table="mytable", alias="mydatabase_mytable")
-                >>> db.register(database="mydatabase", table="mytable", pyarrow_options={
-                >>>     "partitions": [("year", "=", "2021")]
-                >>> })
+            >>> db.register(database="mydatabase", table="mytable", data=...)
+            >>> db.register(database="mydatabase", table="mytable", version=1)
+            >>> db.register(database="mydatabase", table="mytable", alias="mydatabase_mytable")
+            >>> db.register(database="mydatabase", table="mytable", pyarrow_options={
+            >>>     "partitions": [("year", "=", "2021")]
+            >>> })
         """
         table_path = join(self.__delta_source, database, table)
         options = dict()
@@ -135,16 +111,14 @@ class delta:
         except (TableNotFoundError, FileNotFoundError) as e: return e
     
     def __sync_data(self, primary_key:str, target_data:LazyFrame, source_data:LazyFrame) -> LazyFrame:
-        """ Performs a full outer join on the primary key and coalesces data to ensure consistency.
+        """ performs a full outer join on the primary key and coalesces data to ensure consistency.
+            
+            **args**:
+            - **primary_key**: the primary key on which the join will be performed.
+            - **target_data**: the target `LazyFrame` containing the data to be updated.
+            - **source_data**: the source `LazyFrame` containing the data to synchronize with.
 
-            :param primary_key: The primary key on which the join will be performed.
-            :type primary_key: str
-            :param target_data: The target `LazyFrame` containing the data to be updated.
-            :type target_data: LazyFrame
-            :param source_data: The source `LazyFrame` containing the data to synchronize with.
-            :type source_data: LazyFrame
-            :returns: A lazyframe containing the synchronized data.
-            :rtype: LazyFrame
+            returns a lazyframe containing the synchronized data.
         """
         update_data = source_data.join(
             target_data,
@@ -173,25 +147,15 @@ class delta:
         data:list[dict] | dict | DataFrame | LazyFrame,
         database:str="default",
     ) -> Exception:
-        """ Updates or inserts records in the specified table, with schema changes handled automatically. 
-            Changes are reflected in the SQL context, but a commit is required to persist them.
+        """ updates or inserts records in the specified table, with schema changes handled automatically. changes are reflected in the sql context, but a commit is required to persist them.
 
-            :param table: The name of the table to upsert data into.
-            :type table: str
-            :param primary_key: The primary key used to match records for updates.
-            :type primary_key: str
-            :param data: The data to be upserted, can be a list of dictionaries, a dictionary, `DataFrame`, or `LazyFrame`.
-            :type data: list[dict] | dict | DataFrame | LazyFrame
-            :param database: The name of the database where the table is located, defaults to 'default'.
-            :type database: str, optional
-            :returns: An exception if an error occurs, otherwise None.
-            :rtype: Exception or None
+            **args**:
+            - **table**: the name of the table to upsert data into.
+            - **primary_key**: the primary key used to match records for updates.
+            - **data**: the data to be upserted, can be a list of dictionaries, a dictionary, `DataFrame`, or `LazyFrame`.
+            - **database**: `optional` the name of the database where the table is located. default is `'default'`.   
 
-            **Example**:
-
-            .. code-block:: python
-
-                >>> db.upsert(database="mydatabase", table="mytable", primary_key="id", data=...)
+            >>> db.upsert(database="mydatabase", table="mytable", primary_key="id", data=...)
         """
         if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict): data = from_dicts(data).lazy()
         elif isinstance(data, dict): data = from_dict(data).lazy()
@@ -216,26 +180,16 @@ class delta:
         return self.register(database=database, table=table, data=update_data)
     
     def delete(self, table:str, filter:str|LambdaType="*", database:str="default") -> Exception:
-        """ Removes records using a specified SQL condition or lambda function. 
-            This only affects the SQL context and does not delete data from disk or cloud storage.
+        """ removes records using a specified sql condition or lambda function. this only affects the sql context and does not delete data from disk or cloud storage.
 
-            :param table: The name of the table from which records will be deleted.
-            :type table: str
-            :param filter: A SQL condition string or lambda function to filter the records to delete. 
-                Defaults to '*', which deletes all records.
-            :type filter: str | LambdaType, optional
-            :param database: The name of the database where the table is located, defaults to 'default'.
-            :type database: str, optional
-            :returns: An exception if an error occurs, otherwise None.
-            :rtype: Exception or None
+            **args**:
+            - **table**: the name of the table from which records will be deleted.
+            - **filter**: `optional` a sql condition string or lambda function to filter the records to delete. default is `'*'`, which deletes all records.
+            - **database**: `optional` the name of the database where the table is located. default is `'default'`.
 
-            **Example**:
-
-            .. code-block:: python
-
-                >>> db.delete(database="mydatabase", table="mytable")
-                >>> db.delete(database="mydatabase", table="mytable", filter="name='bob'")
-                >>> db.delete(database="mydatabase", table="mytable", filter=lambda row: row["name"] == "bob")
+            >>> db.delete(database="mydatabase", table="mytable")
+            >>> db.delete(database="mydatabase", table="mytable", filter="name='bob'")
+            >>> db.delete(database="mydatabase", table="mytable", filter=lambda row: row["name"] == "bob")
         """
         table_path = join(self.__delta_source, database, table)
         if filter == "*": 
@@ -255,23 +209,14 @@ class delta:
         return self.register(database=database, table=table, data=filter_data)
 
     def sql(self, query:str, lazy:bool=False, dtype:str=None) -> DataFrame | LazyFrame:
-        """ Executes the provided SQL query and returns the result as a DataFrame or LazyFrame. 
-            The result type can be specified via the dtype argument.
+        """ executes the provided sql query and returns the result as a dataframe or lazyframe. the result type can be specified via the dtype argument.
 
-            :param query: The SQL query to execute.
-            :type query: str
-            :param lazy: Returns a LazyFrame if set to True, defaults to False.
-            :type lazy: bool, optional
-            :param dtype: Sets the output data type, defaults to 'json'.
-            :type dtype: str, optional
-            :returns: The query result as a DataFrame or LazyFrame.
-            :rtype: DataFrame | LazyFrame
+            **args**:
+            - **query**: the sql query to execute.
+            - **lazy**: `optional` returns a lazyframe if set to true. default is `false`.
+            - **dtype**: `optional` sets the output data type. default is `'json'`.
 
-            **Example**:
-
-            .. code-block:: python
-
-                >>> db.sql("select * from mytable")
+            >>> db.sql("select * from mytable")
         """
         dtype = dtype if dtype else self.config.dtype 
         if lazy: return self.__delta_sql_context.execute(query)
@@ -287,26 +232,17 @@ class delta:
         partition_by:list[str]=None,
         database:str="default",
     ) -> Exception:
-        """ Persists the current state of a table in the SQL context to the delta source, with optional schema or partitioning options.
+        """ persists the current state of a table in the sql context to the delta source, with optional schema or partitioning options.
 
-            :param table: The name of the table to commit.
-            :type table: str
-            :param force: Force schema changes during the commit, defaults to False.
-            :type force: bool, optional
-            :param partition_by: List of fields to partition by, defaults to None.
-            :type partition_by: list[str], optional
-            :param database: The name of the database, defaults to 'default'.
-            :type database: str, optional
-            :returns: An exception if an error occurs, otherwise None.
-            :rtype: Exception or None
+            **args**:
+            - **table**: the name of the table to commit.
+            - **force**: `optional` force schema changes during the commit.
+            - **partition_by**: `optional` list of fields to partition by.
+            - **database**: `optional` name of the database. default is `'default'`.
 
-            **Example**:
-
-            .. code-block:: python
-
-                >>> db.commit(database="mydatabase", table="mytable")
-                >>> db.commit(database="mydatabase", table="mytable", force=True)
-                >>> db.commit(database="mydatabase", table="mytable", partition_by=["job"])
+            >>> db.commit(database="mydatabase", table="mytable")
+            >>> db.commit(database="mydatabase", table="mytable", force=True)
+            >>> db.commit(database="mydatabase", table="mytable", partition_by=["job"])
         """
         table_path = join(self.__delta_source, database, table)
         data = self.sql(f"select * from {table}", dtype="polars")
@@ -319,21 +255,13 @@ class delta:
         except Exception as e: return e
 
     def checkout(self, table:str, version:int|str|datetime, database:str="default") -> Exception:
-        """ Reloads a previous version of a table from the delta source into the SQL context.
+        """ reloads a previous version of a table from the delta source into the sql context.
 
-            :param table: The name of the table to revert.
-            :type table: str
-            :param version: The version to checkout, which can be an integer, string, or datetime.
-            :type version: int | str | datetime
-            :param database: The name of the database, defaults to 'default'.
-            :type database: str, optional
-            :returns: An exception if an error occurs, otherwise None.
-            :rtype: Exception or None
-
-            **Example**:
-
-            .. code-block:: python
-
-                >>> db.checkout(database="mydatabase", table="mytable", version=1)
+            **args**:
+            - **table**: the name of the table to revert.
+            - **version**: the version to checkout, which can be an integer, string, or datetime.
+            - **database**: `optional` name of the database. default is `'default'`.
+        
+            >>> db.checkout(database="mydatabase", table="mytable", version=1)
         """
         return self.register(database=database, table=table, version=version)
