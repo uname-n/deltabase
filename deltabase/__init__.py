@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright 2024  Darryl McCulley
+# Copyright 2024  darryl mcculley
 
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -38,13 +38,27 @@ class delta:
 
     @property
     def tables(self):
-        """ list tables in the sql context. 
+        """ list all tables within the sql context.
+
+            returns a list of table names available in the sql context.
+
+
+            >>> db.tables  # output: ["table_1", "table_2"]
         """
         return self.__delta_sql_context.tables()
 
     @classmethod
     def connect(cls: Type[T], path:str, config:delta_config=delta_config()) -> T:
-        """ returns `delta` class, if `path` is local tables will be loaded. 
+        """ loads tables from the local path if provided, otherwise connects to a remote source.
+
+            **args**:
+                - **path**: the file path or uri to connect to, can be a local directory or remote storage.
+                - **config**: `optional` configuration settings for the delta instance. default is an instance of `delta_config`.
+                
+            >>> db = delta.connect(path="local_path/mydelta")
+            >>> db = delta.connect(path="az://<container>/<path>")
+            >>> db = delta.connect(path="s3://<bucket>/<path>")
+            >>> db = delta.connect(path="gs://<bucket>/<path>")
         """
         delta_cls = cls()
         delta_cls.__delta_source = path
@@ -72,7 +86,22 @@ class delta:
         version:int|str|datetime=None,
         data:DataFrame|LazyFrame=None,
     ) -> Exception:
-        """ register data to the local sql context. 
+        """ registers the provided data, or loads the table from the delta source if no data is provided.
+
+            **args**:
+            - **table**: the name of the table to register.
+            - **pyarrow_options**: `optional` options for loading the table using pyarrow.
+            - **alias**: `optional` an alias to use for the table within the sql context.
+            - **database**: `optional` the name of the database where the table is located. default is `'default'`.
+            - **version**: `optional` the version of the table to load, can be an integer, string, or datetime.
+            - **data**: `optional` a `DataFrame` or `LazyFrame` to register instead of loading from the delta source.
+
+            >>> db.register(database="mydatabase", table="mytable", data=...)
+            >>> db.register(database="mydatabase", table="mytable", version=1)
+            >>> db.register(database="mydatabase", table="mytable", alias="mydatabase_mytable")
+            >>> db.register(database="mydatabase", table="mytable", pyarrow_options={
+            >>>     "partitions": [("year", "=", "2021")]
+            >>> })
         """
         table_path = join(self.__delta_source, database, table)
         options = dict()
@@ -82,7 +111,14 @@ class delta:
         except (TableNotFoundError, FileNotFoundError) as e: return e
     
     def __sync_data(self, primary_key:str, target_data:LazyFrame, source_data:LazyFrame) -> LazyFrame:
-        """ sync data between target and source based on the primary key. 
+        """ performs a full outer join on the primary key and coalesces data to ensure consistency.
+            
+            **args**:
+            - **primary_key**: the primary key on which the join will be performed.
+            - **target_data**: the target `LazyFrame` containing the data to be updated.
+            - **source_data**: the source `LazyFrame` containing the data to synchronize with.
+
+            returns a lazyframe containing the synchronized data.
         """
         update_data = source_data.join(
             target_data,
@@ -111,9 +147,15 @@ class delta:
         data:list[dict] | dict | DataFrame | LazyFrame,
         database:str="default",
     ) -> Exception:
-        """ upsert single or multiple records with automatic schema management. 
-            
-            the sql context is updated immediately, but a commit must be made to persist. 
+        """ updates or inserts records in the specified table, with schema changes handled automatically. changes are reflected in the sql context, but a commit is required to persist them.
+
+            **args**:
+            - **table**: the name of the table to upsert data into.
+            - **primary_key**: the primary key used to match records for updates.
+            - **data**: the data to be upserted, can be a list of dictionaries, a dictionary, `DataFrame`, or `LazyFrame`.
+            - **database**: `optional` the name of the database where the table is located. default is `'default'`.   
+
+            >>> db.upsert(database="mydatabase", table="mytable", primary_key="id", data=...)
         """
         if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict): data = from_dicts(data).lazy()
         elif isinstance(data, dict): data = from_dict(data).lazy()
@@ -138,9 +180,16 @@ class delta:
         return self.register(database=database, table=table, data=update_data)
     
     def delete(self, table:str, filter:str|LambdaType="*", database:str="default") -> Exception:
-        """ delete an entire table or records from a table using a sql condition or lambda function filter. (sql is much faster) 
-            
-            only deletes from sql context, files on disk or in cloud are not affected.
+        """ removes records using a specified sql condition or lambda function. this only affects the sql context and does not delete data from disk or cloud storage.
+
+            **args**:
+            - **table**: the name of the table from which records will be deleted.
+            - **filter**: `optional` a sql condition string or lambda function to filter the records to delete. default is `'*'`, which deletes all records.
+            - **database**: `optional` the name of the database where the table is located. default is `'default'`.
+
+            >>> db.delete(database="mydatabase", table="mytable")
+            >>> db.delete(database="mydatabase", table="mytable", filter="name='bob'")
+            >>> db.delete(database="mydatabase", table="mytable", filter=lambda row: row["name"] == "bob")
         """
         table_path = join(self.__delta_source, database, table)
         if filter == "*": 
@@ -160,7 +209,14 @@ class delta:
         return self.register(database=database, table=table, data=filter_data)
 
     def sql(self, query:str, lazy:bool=False, dtype:str=None) -> DataFrame | LazyFrame:
-        """ query data from any delta table in sql context. 
+        """ executes the provided sql query and returns the result as a dataframe or lazyframe. the result type can be specified via the dtype argument.
+
+            **args**:
+            - **query**: the sql query to execute.
+            - **lazy**: `optional` returns a lazyframe if set to true. default is `false`.
+            - **dtype**: `optional` sets the output data type. default is `'json'`.
+
+            >>> db.sql("select * from mytable")
         """
         dtype = dtype if dtype else self.config.dtype 
         if lazy: return self.__delta_sql_context.execute(query)
@@ -176,7 +232,17 @@ class delta:
         partition_by:list[str]=None,
         database:str="default",
     ) -> Exception:
-        """ commit a table's current sql context to a delta table. 
+        """ persists the current state of a table in the sql context to the delta source, with optional schema or partitioning options.
+
+            **args**:
+            - **table**: the name of the table to commit.
+            - **force**: `optional` force schema changes during the commit.
+            - **partition_by**: `optional` list of fields to partition by.
+            - **database**: `optional` name of the database. default is `'default'`.
+
+            >>> db.commit(database="mydatabase", table="mytable")
+            >>> db.commit(database="mydatabase", table="mytable", force=True)
+            >>> db.commit(database="mydatabase", table="mytable", partition_by=["job"])
         """
         table_path = join(self.__delta_source, database, table)
         data = self.sql(f"select * from {table}", dtype="polars")
@@ -189,6 +255,13 @@ class delta:
         except Exception as e: return e
 
     def checkout(self, table:str, version:int|str|datetime, database:str="default") -> Exception:
-        """ revert a table to a previous commit. 
+        """ reloads a previous version of a table from the delta source into the sql context.
+
+            **args**:
+            - **table**: the name of the table to revert.
+            - **version**: the version to checkout, which can be an integer, string, or datetime.
+            - **database**: `optional` name of the database. default is `'default'`.
+        
+            >>> db.checkout(database="mydatabase", table="mytable", version=1)
         """
         return self.register(database=database, table=table, version=version)

@@ -6,3 +6,5 @@ __pycache__
 _playground.py
 *.db
 .DS_Store
+docs/build/
+site/
