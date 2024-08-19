@@ -26,6 +26,10 @@ from os import listdir
 
 from deltalake.exceptions import TableNotFoundError
 
+from logging import getLogger
+
+debugger = getLogger("deltabase")
+
 T = TypeVar("T", bound="delta")
 
 class delta_config:
@@ -63,6 +67,9 @@ class delta:
         delta_cls = cls()
         delta_cls.__delta_source = path
         delta_cls.config = config
+
+        try: from .magic import enable; enable(delta_cls)
+        except ImportError as e: debugger.error(e)
 
         if not exists(path) or "://" in path: return delta_cls
         
