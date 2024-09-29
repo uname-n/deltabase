@@ -1,0 +1,31 @@
+{
+	"name": "deltabase",
+	"build":{
+		"dockerfile": "dockerfile",
+		"context": ".",
+		"args": {
+			"VARIANT": "3.11-bullseye"
+		}
+	},
+
+	"features": {
+		"github-cli": "latest"
+	},
+
+	"postCreateCommand": "bash ./.devcontainer/post-install.sh",
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-themes",
+				"ms-toolsai.jupyter",
+				"ms-python.python"
+			],
+			"settings": {
+				"workbench.colorTheme": "Visual Studio 2017 Dark - C++"
+			}
+		}
+	},
+
+	"remoteUser": "vscode"
+}

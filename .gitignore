@@ -1,0 +1,13 @@
+.venv/
+*.delta/
+dist
+__pycache__
+.pytest_cache
+_playground.*
+*.db
+.DS_Store
+docs/build/
+site/
+.env
+*.txt
+examples/delta
