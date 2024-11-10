@@ -12,9 +12,6 @@ polars = "^1.6.0"
 deltalake = "^0.19.0"
 ipython = {version="^8.26.0", optional=true}
 openai = {version="^1.43.0", optional=true}
-pandas = {version="^2.2.2", optional=true}
-simple-salesforce = {version="^1.12.6", optional=true}
-google-cloud-bigquery = {version="^3.26.0", optional=true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
@@ -26,8 +23,6 @@ pandas = "^2.2.2"
 [tool.poetry.extras]
 magic = ["ipython"]
 ai = ["ipython", "openai"]
-salesforce = ["pandas", "simple-salesforce"]
-bigquery = ["google-cloud-bigquery"]
 
 [build-system]
 requires = ["poetry-core"]
