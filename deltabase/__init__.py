@@ -119,7 +119,9 @@ class delta:
         table_path = join(self.__delta_source, database, table)
 
         options = dict()
-        if pyarrow_options: options["pyarrow_options"] = pyarrow_options
+        if pyarrow_options: 
+            options["use_pyarrow"]=True
+            options["pyarrow_options"] = pyarrow_options
         if isinstance(version, int|str|datetime): options["version"] = version
         table_name = alias if alias else table
 
