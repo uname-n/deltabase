@@ -19,8 +19,6 @@
 from types import LambdaType
 from typing import Any, TypeVar, Type
 
-from .plugins import delta_plugin
-
 from polars import SQLContext, DataFrame, LazyFrame, Schema, sql_expr, scan_delta, struct, coalesce, from_dicts, from_dict, from_pandas
 from polars.exceptions import SchemaError
 
@@ -47,12 +45,7 @@ class delta:
     __delta_sql_context:SQLContext=SQLContext(frames=[])
     __delta_sql_context_schema:dict[str, Schema]={}
     config:delta_config
-
-    def __getattr__(self, name):
-        for plugin in delta_plugin.__subclasses__():
-            if name == plugin.__qualname__: return plugin
-        raise ModuleNotFoundError(f"`{name}` plugin not found. available plugins can be installed using `deltabase[<package>]`.")
-
+    
     @property
     def tables(self):
         """ list all tables within the sql context.
@@ -126,7 +119,9 @@ class delta:
         table_path = join(self.__delta_source, database, table)
 
         options = dict()
-        if pyarrow_options: options["pyarrow_options"] = pyarrow_options
+        if pyarrow_options: 
+            options["use_pyarrow"]=True
+            options["pyarrow_options"] = pyarrow_options
         if isinstance(version, int|str|datetime): options["version"] = version
         table_name = alias if alias else table
 
